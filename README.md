@@ -7,4 +7,4 @@
 
 - Розширення в [Chrome Web Store](https://chromewebstore.google.com/detail/movie-timecode/oicfghfgplgplodmidellkbfoachacjb).
 - Розширення на [Github](https://github.com/mrgarest/movietimecode-extension).
-- [Telegram канал з таймокдами](https://t.me/+B-6MNbF-t6cyZDVi).
+- [Telegram канал з таймкодами](https://t.me/+B-6MNbF-t6cyZDVi).
