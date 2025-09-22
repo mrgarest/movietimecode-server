@@ -3,7 +3,6 @@
 namespace App\Clients;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Str;
 
 class ImdbClient
 {

@@ -294,6 +294,16 @@ class TimecodeController extends Controller
         $dataValidator = $validator->getData();
 
         $title = trim(urldecode($dataValidator['q']));
+        $titles = [$title];
+        if (!empty($title) && str_contains($title, ' / ')) {
+            $parts = explode(' / ', $title, 2);
+            $firstPart = $parts[0] ?? null;
+            $secondPart = $parts[1] ?? null;
+
+            if ($firstPart) $titles[] = $firstPart;
+            if ($secondPart) $titles[] = $secondPart;
+        }
+
         $year = isset($dataValidator['year']) ? (int) $dataValidator['year'] : null;
 
         $langCode = 'uk';
@@ -307,9 +317,13 @@ class TimecodeController extends Controller
             return 'movies.' . $item;
         }, array_merge(['release_date'], $select)))
             ->leftJoin('movie_translations', 'movie_translations.movie_id', '=', 'movies.id')
-            ->where(function ($query) use ($title) {
-                $query->where('movies.title', 'like',  $title)
-                    ->orWhere('movie_translations.title', 'like',  $title);
+            ->where(function ($q) use ($titles) {
+                foreach ($titles as $t) {
+                    if (!empty($t)) {
+                        $q->orWhere('movies.title', 'like', $t)
+                            ->orWhere('movie_translations.title', 'like', $t);
+                    }
+                }
             })->when($year, function ($query, $year) {
                 $start = ($year - 1) . '-01-01';
                 $end   = ($year + 1) . '-12-31';
