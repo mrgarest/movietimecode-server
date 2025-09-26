@@ -60,7 +60,7 @@ class MovieController extends Controller
                     'tmdb_id' => $value['id'],
                     'title' => $value['title'],
                     'original_title' => $value['original_title'],
-                    'poster_url' => TmdbClient::getImageUrl('w200', $value['poster_path'])
+                    'poster_url' => TmdbClient::getImageUrl('w200', str_replace('/', '', $value['poster_path']))
                 ];
             }
         }
