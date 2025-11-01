@@ -34,19 +34,35 @@ class MovieController extends Controller
         ]);
 
         if ($validator->fails()) return EchoApi::httpError(Response::HTTP_BAD_REQUEST);
-        $data = $validator->getData();
-        $page = $data['page'] ?? 1;
-        $year = $data['year'] ?? null;
-        $query = trim(urldecode($data['q']));
+        $dataValidator = $validator->getData();
+        $page = $dataValidator['page'] ?? 1;
+        $year = $dataValidator['year'] ?? null;
+        $title = trim(urldecode($dataValidator['q']));
+        $titles = [$title];
+        if (!empty($title) && str_contains($title, ' / ')) {
+            $parts = explode(' / ', $title, 2);
+            $firstPart = $parts[0] ?? null;
+            $secondPart = $parts[1] ?? null;
 
-        $cacheKey = 'movie_search_raw_' . md5($query) . '_' . $page . ($year != null ? '_' . $year : '');
-        $DATA = Cache::get($cacheKey, null);
+            if ($firstPart) $titles[] = $firstPart;
+            if ($secondPart) $titles[] = $secondPart;
+        }
 
-        if ($DATA == null) {
-            $searchMovie = TmdbClient::searchMovie($query, 'uk-UA', $page, $year);
+        $cacheKey = 'movie_search_raw_' . md5($title) . '_' . $page . ($year != null ? '_' . $year : '');
+        $data = Cache::get($cacheKey, null);
+
+        if ($data == null) {
+            $searchMovie = null;
+            foreach ($titles as $t) {
+                $result = TmdbClient::searchMovie($t, 'uk-UA', $page, $year);
+                if ($result != null && !empty($result['results'])) {
+                    $searchMovie = $result;
+                    break;
+                }
+            }
             if ($searchMovie == null || empty($searchMovie['results'])) return EchoApi::success(['items' => []]);
 
-            $DATA['items'] = [];
+            $data['items'] = [];
             $tmdbIds = [];
 
             foreach ($searchMovie['results'] as $value) {
@@ -54,7 +70,7 @@ class MovieController extends Controller
                     'ru',
                     'by'
                 ]) || !isset($value['release_date'])) continue;
-                $DATA['items'][] = [
+                $data['items'][] = [
                     'id' => null,
                     'release_year' => Carbon::parse($value['release_date'])->year,
                     'tmdb_id' => $value['id'],
@@ -65,8 +81,8 @@ class MovieController extends Controller
             }
         }
 
-        if (!empty($DATA['items'])) {
-            $tmdbIds = array_column($DATA['items'], 'tmdb_id');
+        if (!empty($data['items'])) {
+            $tmdbIds = array_column($data['items'], 'tmdb_id');
 
             if (!empty($tmdbIds)) {
                 $movieExternalIds = MovieExternalId::externalId(EnumsMovieExternalId::TMDB)
@@ -74,19 +90,19 @@ class MovieController extends Controller
                     ->get()
                     ->keyBy('value');
 
-                foreach ($DATA['items'] as $key => $item) {
+                foreach ($data['items'] as $key => $item) {
                     $tmdbId = $item['tmdb_id'];
 
                     if (isset($movieExternalIds[$tmdbId])) {
-                        $DATA['items'][$key]['id'] = $movieExternalIds[$tmdbId]->movie_id;
+                        $data['items'][$key]['id'] = $movieExternalIds[$tmdbId]->movie_id;
                     }
                 }
             }
         }
 
-        if ($DATA == null) Cache::put($cacheKey, $DATA, Carbon::now()->addMinutes(15));
+        if ($data == null) Cache::put($cacheKey, $data, Carbon::now()->addMinutes(15));
 
-        return EchoApi::success($DATA);
+        return EchoApi::success($data);
     }
 
     public function check(Request $request)

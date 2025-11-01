@@ -16,7 +16,6 @@ class MovieTimecodeSegment extends Model
         'action_id',
         'start_time',
         'end_time',
-        'view_count',
         'description'
     ];
 

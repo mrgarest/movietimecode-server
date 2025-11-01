@@ -23,7 +23,6 @@ return new class extends Migration
             $table->unsignedSmallInteger('action_id')->nullable();
             $table->unsignedSmallInteger('start_time');
             $table->unsignedSmallInteger('end_time');
-            $table->unsignedBigInteger('view_count')->default(0);
             $table->string('description')->nullable();
             $table->timestamps();
         });

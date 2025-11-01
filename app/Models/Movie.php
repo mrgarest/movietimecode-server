@@ -32,6 +32,7 @@ class Movie extends Model
     {
         return $this->hasMany(MovieExternalId::class);
     }
+    
     public function companies()
     {
         return $this->hasMany(MovieCompany::class);
