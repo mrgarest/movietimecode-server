@@ -5,4 +5,7 @@ namespace App\Enums;
 enum TimecodeTag: int
 {
     case NUDITY = 100;
+    case VIOLENCE = 101;
+    case SENSITIVE_EXPRESSIONS = 102;
+    case SEXUAL_CONTENT_WITHOUT_NUDITY = 103;
 }

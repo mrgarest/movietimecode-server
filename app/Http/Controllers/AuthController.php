@@ -15,7 +15,6 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
 use MrGarest\EchoApi\EchoApi;
-use RalphJSmit\Laravel\SEO\Support\SEOData;
 use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
@@ -28,10 +27,6 @@ class AuthController extends Controller
     private function getAuthView(array $jsonPageData)
     {
         return view('auth', [
-            'SEOData' => new SEOData(
-                robots: 'noindex, nofollow',
-                title: 'Authentication'
-            ),
             'jsonPageData' => $jsonPageData
         ]);
     }
@@ -45,7 +40,7 @@ class AuthController extends Controller
             $socialite = null;
         }
 
-        if (!$socialite) return $this->getAuthView(['error' => 'Під час авторизації виникла помилка 😢']);
+        if (!$socialite) return $this->getAuthView(['error' => 'auth.failed']);
 
         $userProvider = UserProvider::findUser($provider, $socialite->id)->with(['user' => function ($query) {
             $query->withTrashed();
@@ -53,8 +48,8 @@ class AuthController extends Controller
 
         if ($userProvider) {
             $user = $userProvider->user;
-            if ($user->trashed()) return $this->getAuthView(['error' => 'Цей обліковий запис було видалено!']);
-            if ($user->deactivated_at != null) return $this->getAuthView(['error' => 'Цей обліковий запис було деактивовано!']);
+            if ($user->trashed()) return $this->getAuthView(['error' => 'auth.accountHasBeenDeleted']);
+            if ($user->deactivated_at != null) return $this->getAuthView(['error' => 'auth.accountHasBeenDeactivated']);
 
             $user->update([
                 'username' => $socialite->name,
@@ -95,7 +90,7 @@ class AuthController extends Controller
             });
         }
 
-        if (!$user) return $this->getAuthView(['error' => 'Не вдалося створити користувача 😢']);
+        if (!$user) return $this->getAuthView(['error' => 'auth.failedCreateUser']);
 
         $now = Carbon::now();
         $token = Str::random(32);
