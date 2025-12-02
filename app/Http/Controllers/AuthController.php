@@ -4,13 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Enums\AuthProvider;
 use App\Enums\RoleId;
-use App\Enums\UserTokenType;
+use App\Models\ExpansionAuth;
 use App\Models\User;
 use App\Models\UserProvider;
-use App\Models\UserToken;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
-use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Socialite;
+use Laravel\Socialite\Two\TwitchProvider;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Http\Request;
@@ -19,9 +19,13 @@ use Symfony\Component\HttpFoundation\Response;
 
 class AuthController extends Controller
 {
-    public function logIn()
+    public function logIn(Request $request)
     {
-        return Socialite::driver(AuthProvider::TWITCH->value)->redirect();
+        /** @var TwitchProvider $driver */
+        $driver = Socialite::driver(AuthProvider::TWITCH->value);
+
+        // return $driver->scopes(['user:read:email'])->redirect();
+        return $driver->scopes(['user:read:email', 'chat:edit', 'chat:read'])->redirect();
     }
 
     private function getAuthView(array $jsonPageData)
@@ -31,7 +35,7 @@ class AuthController extends Controller
         ]);
     }
 
-    public function callback()
+    public function callback(Request $request)
     {
         $provider = AuthProvider::TWITCH->value;
         try {
@@ -54,14 +58,13 @@ class AuthController extends Controller
             $user->update([
                 'username' => $socialite->name,
                 'email' => null,
-                'picture' => null
+                'picture' => $socialite->avatar,
             ]);
 
             $userProvider->update([
                 'name' => $socialite->name,
             ]);
         } else {
-
             $user = DB::transaction(function () use ($provider, $socialite) {
                 $now = Carbon::now();
                 $user = User::create([
@@ -70,7 +73,7 @@ class AuthController extends Controller
                     // 'email' => $socialite->email,
                     'email' => null,
                     'password' => null,
-                    'picture' => null,
+                    'picture' => $socialite->avatar,
                     'email_verified_at' => null
                 ]);
 
@@ -79,10 +82,6 @@ class AuthController extends Controller
                     'provider' => $provider,
                     'account_id' => $socialite->id,
                     'name' => $socialite->name,
-                    'token_type' => null,
-                    'access_token' => null,
-                    'refresh_token' => null,
-                    'expires_at' => null,
                     'created_at' => $now,
                     'updated_at' => $now
                 ]);
@@ -92,15 +91,18 @@ class AuthController extends Controller
 
         if (!$user) return $this->getAuthView(['error' => 'auth.failedCreateUser']);
 
-        $now = Carbon::now();
         $token = Str::random(32);
-        UserToken::insert([
+        ExpansionAuth::create([
             'user_id' => $user->id,
-            'type' => UserTokenType::AUTH->value,
             'token' => $token,
-            'expires_at' => $now->copy()->addHours(1),
-            'created_at' => $now,
-            'updated_at' => $now
+            'payload' => [
+                'twitch' => $socialite->token && $socialite->refreshToken ? [
+                    'access_token' => $socialite->token,
+                    'refresh_token' => $socialite->refreshToken,
+                    'expires_at' => $socialite->expiresIn ? Carbon::now()->addSeconds($socialite->expiresIn)->timestamp : null,
+                ] : null
+            ],
+            'expires_at' => Carbon::now()->addHours(1),
         ]);
 
 
@@ -122,12 +124,13 @@ class AuthController extends Controller
         if ($validator->fails()) return EchoApi::httpError(Response::HTTP_BAD_REQUEST);
         $data = $validator->getData();
 
-        $userToken = UserToken::with('user')->userId($data['id'])->type(UserTokenType::AUTH->value)->token($data['token'])->first();
+        $userToken = ExpansionAuth::with('user')->userId($data['id'])->token($data['token'])->first();
+        $twitchPayload = $userToken->payload['twitch'] ?? null;
 
         $user = $userToken->user ?? null;
         if (!$userToken || !$user) return EchoApi::findError('USER_NOT_FOUND');
 
-        UserToken::userId($user->id)->type(UserTokenType::AUTH->value)->delete();
+        ExpansionAuth::userId($user->id)->delete();
 
         $token = $user->createToken('auth', ['*']);
 
@@ -135,6 +138,12 @@ class AuthController extends Controller
             'id' => $user->id,
             'role_id' => $user->role_id,
             'username' => $user->username,
+            'picture' => $user->picture,
+            'twitch' => $twitchPayload !== null ? [
+                'access_token' => $twitchPayload['access_token'],
+                'refresh_token' => $twitchPayload['refresh_token'],
+                'expires_at' => $twitchPayload['expires_at']
+            ] : null,
             'access_token' => $token->accessToken,
             'expires_at' => Carbon::now()->addMonths(10)->timestamp
         ]);

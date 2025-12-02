@@ -24,7 +24,7 @@ return [
 
     'allowed_origins' => [
         'chrome-extension://oicfghfgplgplodmidellkbfoachacjb', // webstore
-        'chrome-extension://eajnmfjkceifgcafoaldpejgjioniejf', // dev
+        'chrome-extension://pnljcfobncpcgmdgnhlckedpaehinmfe', // dev
         'https://*.mrgarest.com',
         'http://localhost:3000'
     ],

@@ -11,9 +11,6 @@ class UserProvider extends Model
         'provider',
         'account_id',
         'name',
-        'token_type',
-        'access_token',
-        'refresh_token',
         'expires_at',
         'created_at',
         'updated_at'

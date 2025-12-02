@@ -22,9 +22,7 @@ export default function Footer() {
                     target={item.target}
                     className="text-xs p-0.5 text-muted font-medium hover:text-foreground duration-300 select-none"
                     href={item.href}>{item.name}</Linker>)}</nav>
-                <div className="text-xs text-muted/60 font-medium">Developed by: <a
-                    className="hover:text-foreground duration-300"
-                    href="https://t.me/Garest" target="_blank" rel="noopener noreferrer">Garest</a></div>
+                <div className="text-xs text-muted/60 font-medium text-center">Developed by Garest</div>
             </div>
         </footer>
     );

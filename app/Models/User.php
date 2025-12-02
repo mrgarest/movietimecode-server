@@ -52,8 +52,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
     public function tokens()
     {
-        return $this->hasMany(UserToken::class);
+        return $this->hasMany(ExpansionAuth::class);
+    }
+
+    public function providers()
+    {
+        return $this->hasMany(UserProvider::class);
     }
 }

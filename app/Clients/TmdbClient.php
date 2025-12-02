@@ -6,12 +6,13 @@ use Illuminate\Support\Facades\Http;
 
 class TmdbClient
 {
+    const API_BASE = "https://api.themoviedb.org/3";
+
     public static function withHeaders()
     {
         return Http::withHeaders([
-            'Authorization' => 'Bearer ' . config('services.tmdb.token'),
             'Accept' => 'application/json',
-        ]);
+        ])->withToken(config('services.tmdb.token'));
     }
 
     public static function get(string $url, $query = null)
@@ -29,27 +30,27 @@ class TmdbClient
             'page' => $page,
         ];
         if ($year != null) $queryParams['year'] = $year;
-        return static::get('https://api.themoviedb.org/3/search/movie', $queryParams);
+        return static::get(self::API_BASE . '/search/movie', $queryParams);
     }
 
     public static function movieDetails($id, $language = 'en-US')
     {
-        return static::get("https://api.themoviedb.org/3/movie/$id?language=$language");
+        return static::get(self::API_BASE . "/movie/$id?language=$language");
     }
 
     public static function movieTranslations($id)
     {
-        return static::get("https://api.themoviedb.org/3/movie/$id/translations");
+        return static::get(self::API_BASE . "/movie/$id/translations");
     }
 
     public static function movieImages($id)
     {
-        return static::get("https://api.themoviedb.org/3/movie/$id/images");
+        return static::get(self::API_BASE . "/movie/$id/images");
     }
 
     public static function movieExternalIds($id)
     {
-        return static::get("https://api.themoviedb.org/3/movie/$id/external_ids");
+        return static::get(self::API_BASE . "/movie/$id/external_ids");
     }
 
     public static function getImageUrl(string $size, $path)

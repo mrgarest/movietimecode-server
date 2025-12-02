@@ -12,13 +12,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('user_tokens', function (Blueprint $table) {
+        Schema::create('expansion_auths', function (Blueprint $table) {
             $table->id()->from(1000);
             $table->foreignIdFor(User::class)->constrained()->cascadeOnDelete();
-            $table->string('type');
             $table->string('token');
+            $table->json('payload')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
+
+            $table->index(['user_id', 'token']);
+            $table->unique(['user_id', 'token']);
         });
     }
 
@@ -27,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('user_tokens');
+        Schema::dropIfExists('expansion_auths');
     }
 };
