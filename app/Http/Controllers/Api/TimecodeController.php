@@ -10,10 +10,12 @@ use App\Models\Movie;
 use App\Models\MovieExternalId;
 use App\Models\MovieTimecode;
 use App\Models\MovieTimecodeSegment;
+use App\Notifications\AddedTimecodeNotifi;
 use App\Services\MovieService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Validator;
 use MrGarest\EchoApi\EchoApi;
 use Symfony\Component\HttpFoundation\Response;
@@ -168,6 +170,19 @@ class TimecodeController extends Controller
                 'updated_at' => $now
             ];
             if (!empty($segmentData)) MovieTimecodeSegment::insert($segmentData);
+        }
+
+        $telegramNotifi = config('services.telegram-bot-api');
+        if ($telegramNotifi['sendAddedTimecode'] && $telegramNotifi['token'] && $telegramNotifi['chat_id']) {
+            Notification::route('telegram', $telegramNotifi['chat_id'])
+                ->notify(new AddedTimecodeNotifi(
+                    $user->id,
+                    $user->username,
+                    $movie->id,
+                    $movie->title,
+                    isset($data['segments']) ? count($data['segments']) : 0,
+                    $movieTimecode->created_at
+                ));
         }
 
         return EchoApi::success();
