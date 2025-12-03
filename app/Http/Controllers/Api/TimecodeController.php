@@ -126,11 +126,11 @@ class TimecodeController extends Controller
 
         $hasTimecode = false;
         if (isset($data['movie_id'])) {
-            $movie = Movie::withExists($withMovie)->select('id')->find($data['movie_id']);
+            $movie = Movie::withExists($withMovie)->select('id', 'title')->find($data['movie_id']);
             if ($movie) $hasTimecode = $movie->has_timecode;
         } else {
             $movieExternalId = MovieExternalId::with(['movie' => function ($query) use ($withMovie) {
-                $query->select('id')->withExists($withMovie);
+                $query->select('id', 'title')->withExists($withMovie);
             }])->externalAndValue(EnumsMovieExternalId::TMDB, $data['tmdb_id'])->first();
 
             $movie = $movieExternalId->movie ?? null;
@@ -179,7 +179,7 @@ class TimecodeController extends Controller
                     $user->id,
                     $user->username,
                     $movie->id,
-                    $movie->title,
+                    $movie->title ?? 'N/A',
                     isset($data['segments']) ? count($data['segments']) : 0,
                     $movieTimecode->created_at
                 ));

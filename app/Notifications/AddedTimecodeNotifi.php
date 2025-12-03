@@ -5,6 +5,7 @@ namespace App\Notifications;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+use NotificationChannels\Telegram\Enums\ParseMode;
 use NotificationChannels\Telegram\TelegramMessage;
 
 class AddedTimecodeNotifi extends Notification
@@ -41,7 +42,8 @@ class AddedTimecodeNotifi extends Notification
     public function toTelegram(object $notifiable): TelegramMessage
     {
         return TelegramMessage::create()
-            ->line('🎞 **Додано нові таймкоди**')
+            ->parseMode(ParseMode::HTML) 
+            ->line('🎞 <b>Додано нові таймкоди</b>')
             ->line("Користувач: {$this->username} ($this->userId)")
             ->line("Фільм: {$this->movieTitle} ($this->movieId)")
             ->line('Кількість сегментів: ' . $this->segmentsCount)
